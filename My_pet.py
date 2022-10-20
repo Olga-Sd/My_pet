@@ -6,10 +6,13 @@ from itertools import cycle
 
 
 def life_param():
-    global happiness_level, energy_level, fullness_level, root
+    global happiness_level, energy_level, fullness_level, root, is_fat
     if is_awake:
-        print(happiness_level)
-
+        if fullness_level <= 200 and is_fat:
+            print(fullness_level, is_fat)
+            is_fat = False
+            c.coords(body, 35, 20, 365, 350)
+            c.update()
         c.coords(energy_line, 450,100,450 + energy_level,100)
         energy_label.configure(text='Энергия'+str(energy_level//2)+'%')
 
@@ -22,12 +25,32 @@ def life_param():
         happiness_level -= 4
         energy_level -= 4
         fullness_level -= 4
+
+    else:
+        if fullness_level <= 200 and is_fat:
+            print(fullness_level, is_fat)
+            is_fat = False
+            c.coords(body, 35, 20, 365, 350)
+            c.update()
+        c.coords(energy_line, 450, 100, 450 + energy_level, 100)
+        energy_label.configure(text='Энергия' + str(energy_level // 2) + '%')
+
+        c.coords(happiness_line, 450, 150, 450 + happiness_level, 150)
+        happiness_label.configure(text='Счастье' + str(happiness_level // 2) + '%')
+
+        c.coords(fullness_line, 450, 200, 450 + fullness_level, 200)
+        fullness_label.configure(text='Сытость' + str(fullness_level // 2) + '%')
+
+        if energy_level <= 196:
+            energy_level += 8
+        fullness_level -= 4
+
+
     root.after(5000, life_param)
 
 
-
 def blink():
-    if is_awake == True:
+    if is_awake:
         eyes_switch()
         root.after(250, eyes_switch)
         root.after(3500, blink)
@@ -68,29 +91,31 @@ def hide_happiness(event):
 
 
 def feeding(event):
-    global food, food_colors, happiness_level, energy_level, fullness_level
-    c.itemconfigure(mouth_happy, state=tk.HIDDEN)
-    c.itemconfigure(mouth_normal, state=tk.HIDDEN)
-    c.itemconfigure(mouth_eating, state=tk.NORMAL)
-    if 450 < event.x < 480 and 350 < event.y < 380:
-        food = food_fly(event.x, event.y, food)
+    if is_awake:
+        global food, food_colors, happiness_level, energy_level, fullness_level, is_fat
+        c.itemconfigure(mouth_happy, state=tk.HIDDEN)
+        c.itemconfigure(mouth_normal, state=tk.HIDDEN)
+        c.itemconfigure(mouth_eating, state=tk.NORMAL)
+        if 470 < event.x < 500 and 350 < event.y < 380:
+            food = food_fly(event.x, event.y, food)
 
 
-    c.itemconfigure(mouth_happy, state=tk.NORMAL)
-    c.itemconfigure(mouth_eating, state=tk.HIDDEN)
-    c.itemconfigure(cheek_left, state=tk.NORMAL)
-    c.itemconfigure(cheek_right, state=tk.NORMAL)
-    if happiness_level <= 196:
-        happiness_level += 4
-    if energy_level <= 196:
-        energy_level += 4
-    if fullness_level <= 192:
-        fullness_level += 8
-    else:
-        fullness_level += 4
+        c.itemconfigure(mouth_happy, state=tk.NORMAL)
+        c.itemconfigure(mouth_eating, state=tk.HIDDEN)
+        c.itemconfigure(cheek_left, state=tk.NORMAL)
+        c.itemconfigure(cheek_right, state=tk.NORMAL)
+        if happiness_level <= 196:
+            happiness_level += 4
+        if energy_level <= 196:
+            energy_level += 4
+        if fullness_level <= 192:
+            fullness_level += 8
+        else:
+            fullness_level += 8
 
-    if 220 <= fullness_level <= 240:
-        c.coords(body,20,10,385,370)
+        if 220 <= fullness_level <= 240 and not is_fat:
+            c.coords(body,15,10,390,375)
+            is_fat = True
 
 
 def food_fly(x, y, food):
@@ -104,12 +129,28 @@ def food_fly(x, y, food):
     c.update()
     root.after(450, c.delete(food))
     c.update()
-    return c.create_oval(450, 350, 480, 380, outline=random.choice(food_colors),
-                             fill=random.choice(food_colors))
+    fd_color = next(food_colors)
+    food_label['bg']=fd_color
+    return c.create_oval(470, 350, 500, 380, outline=next(food_colors),
+                             fill=fd_color)
 
+
+def sleep_rise():
+    global is_awake
+    if is_awake:
+        is_awake = False
+        cmd_sleep['text'] = 'Разбудить'
+        eyes_switch()
+
+    else:
+        is_awake = True
+        cmd_sleep['text'] = 'Здоровый сон'
+        eyes_switch()
+        blink()
 
 
 is_awake = True
+is_fat = False
 
 energy_level = 200
 happiness_level = 200
@@ -129,6 +170,8 @@ ear_right = c.create_polygon(230, 80, 320, 10, 320, 90, outline=BODY_COLOR, fill
 foot_left = c.create_oval(55, 320, 145, 370, outline=BODY_COLOR, fill=BODY_COLOR)
 foot_rigth = c.create_oval(250, 320, 340, 370, outline=BODY_COLOR, fill=BODY_COLOR)
 
+eye_left_closed = c.create_line(130,145,145,170,160,145, smooth=1,width=2)
+eye_left_closed = c.create_line(230,145,245,170,260,145, smooth=1,width=2)
 eye_left = c.create_oval(130, 110, 160, 170, outline="black", fill="white", state=tk.NORMAL)
 eye_right = c.create_oval(230, 110, 260, 170, outline="black", fill="white", state=tk.NORMAL)
 eyeball_left = c.create_oval(140, 145, 150, 155, outline="black", fill="black", state=tk.NORMAL)
@@ -142,10 +185,13 @@ mouth_normal = c.create_line(170, 250, 200, 265, 230, 250, smooth=1, width=2, st
 mouth_happy = c.create_line(170, 250, 200, 282, 230, 250, smooth=1, width=2, state=tk.HIDDEN)
 mouth_eating = c.create_oval(185, 240, 215, 270, width=2, state=tk.HIDDEN)
 
-food_colors = ['red','green','yellow','white','purple','brown']
-
-food = c.create_oval(450,350,480,380, outline = random.choice(food_colors),
-                     fill=random.choice(food_colors), tag = 'food1')
+food_colors = cycle(['red','green','yellow','white','purple','brown','grey',
+               'dark sea green', 'sea green', 'medium sea green','forest green', 'olive drab'])
+food_color = next(food_colors)
+food_label = tk.Label(root, text = 'МОЯ ЕДА ->', bg=food_color)
+food_label.place(x=370, y=355)
+food = c.create_oval(470,350,500,380, outline = next(food_colors),
+                     fill=food_color, tag = 'food1')
 energy_line = c.create_line(450,100,450 + energy_level,100, fill = 'yellow',
                             width = 5)
 energy_label = tk.Label(root, text = 'Энергия'+str(energy_level//2)+'%', bg = 'darkblue',
@@ -162,8 +208,10 @@ fullness_line = c.create_line(450,200,450 + energy_level,200, fill = 'brown',
                             width = 5)
 fullness_label = tk.Label(root, text = 'Сытость'+str(fullness_level//2)+'%', bg = 'darkblue',
                         fg = 'brown')
-fullness_label.place(x = 450, y = 175)
+fullness_label.place(x=450, y=175)
 
+cmd_sleep = tk.Button(root, text='Здоровый сон', width = 14, bg = 'aquamarine', command=sleep_rise)
+cmd_sleep.place(x=550, y=352)
 
 c.focus_set()
 c.pack()
